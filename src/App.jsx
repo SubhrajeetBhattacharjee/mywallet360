@@ -1,15 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Activity } from './components/dashboard/Activity'
 import { BalanceCard } from './components/dashboard/BalanceCard'
+import { AnalysisPeriodBar } from './components/dashboard/AnalysisPeriodBar'
 import { DashboardBar } from './components/dashboard/DashboardBar'
 import { DashboardLoader } from './components/dashboard/DashboardLoader'
-import { IdentityCard } from './components/dashboard/IdentityCard'
 import { Insights } from './components/dashboard/Insights'
 import { MoneyFlowTab } from './components/dashboard/MoneyFlowTab'
-import { PortfolioCard } from './components/dashboard/PortfolioCard'
+import { PortfolioChart } from './components/dashboard/PortfolioChart'
 import { PortfolioHoldings } from './components/dashboard/PortfolioHoldings'
-import { Summary } from './components/dashboard/Summary'
+import { TransactionHeatmap } from './components/dashboard/TransactionHeatmap'
+import { TransactionsExplorer } from './components/dashboard/TransactionsExplorer'
+import { TransactionAnalytics } from './components/dashboard/TransactionAnalytics'
+import { WalletHealth } from './components/dashboard/WalletHealth'
 import { WalletPersonality } from './components/dashboard/WalletPersonality'
+import { LandingPreview } from './components/landing/LandingPreview'
 import { BottomNav } from './components/layout/BottomNav'
 import { Header } from './components/layout/Header'
 import { useTheme } from './hooks/useTheme'
@@ -21,6 +25,7 @@ const exampleWallets = walletService.listExampleWallets()
 export default function App() {
   const [activeTab, setActiveTab] = useState('Overview')
   const [displayMode, setDisplayMode] = useState('usd')
+  const [showTransactionsExplorer, setShowTransactionsExplorer] = useState(false)
   const {
     wallet,
     error,
@@ -46,6 +51,10 @@ export default function App() {
     disconnectWallet,
   } = useWalletDashboard()
   const { theme, toggleTheme } = useTheme()
+
+  useEffect(() => {
+    setShowTransactionsExplorer(false)
+  }, [wallet?.id, activeTab])
 
   return (
     <div className="app-shell mx-auto w-[min(100%,1180px)] px-[clamp(16px,3vw,32px)] pb-[124px] max-[700px]:px-4 max-[700px]:pb-[120px] max-[480px]:px-3 max-[480px]:pb-[116px] max-[360px]:px-[9px] max-[360px]:pb-28">
@@ -74,64 +83,118 @@ export default function App() {
 
       {wallet ? (
         <>
-          {activeTab === 'Overview' ? (
-            <main className={`grid gap-9 max-[700px]:gap-6 ${isLoading ? 'dashboard-loading' : 'dashboard-ready'}`} key={wallet.id}>
+          {activeTab === 'Overview' && (
+            <main className={`grid gap-9 max-[700px]:gap-6 ${isLoading ? 'dashboard-loading' : 'dashboard-ready'}`} key={`overview-${wallet.id}`}>
+              {isLoading && !showTransactionsExplorer && <DashboardLoader />}
+              {showTransactionsExplorer ? (
+                <TransactionsExplorer
+                  walletAddress={wallet.id}
+                  ensLabel={resolvedIdentifier?.type === 'ens' ? resolvedIdentifier.originalInput : wallet.profile?.wallet !== wallet.id ? wallet.profile?.wallet : null}
+                  periodLabel={wallet.periodLabel}
+                  analysisDays={analysisDays}
+                  customRange={customRange}
+                  transactionCount={wallet.transactionCount}
+                  transactionCountIsLowerBound={wallet.transactionCountIsLowerBound}
+                  nftTransferCount={wallet.nftBreakdown?.total}
+                  onBack={() => setShowTransactionsExplorer(false)}
+                />
+              ) : (
+                <>
+                  <DashboardBar
+                    displayMode={displayMode}
+                    onDisplayModeChange={setDisplayMode}
+                  />
+                  <BalanceCard
+                    wallet={wallet}
+                    error={error}
+                    displayMode={displayMode}
+                    ethPrice={wallet.ethPrice}
+                  />
+                  <TransactionHeatmap
+                    dailyTransactionCounts={wallet.dailyTransactionCounts}
+                    activityStats={wallet.activityStats}
+                  />
+                  <TransactionAnalytics
+                    dailyAnalytics={wallet.dailyAnalytics}
+                    addressLabel={wallet.profile?.wallet || wallet.chipLabel}
+                    ethPrice={wallet.ethPrice}
+                  />
+                  <AnalysisPeriodBar
+                    periods={ANALYSIS_PERIODS}
+                    selectedDays={analysisDays}
+                    customRange={customRange}
+                    pendingDays={pendingAnalysisDays}
+                    isLoading={isPeriodLoading}
+                    onPeriodChange={selectAnalysisPeriod}
+                    scopeHint="Period applies to: Recent Activity"
+                  />
+                  <Activity
+                    transactions={wallet.transactions}
+                    periodLabel={wallet.periodLabel}
+                    onSeeAll={() => setShowTransactionsExplorer(true)}
+                  />
+                </>
+              )}
+            </main>
+          )}
+
+          {activeTab === 'Money Flow' && (
+            <main key={`flow-${wallet.id}`} className={`grid gap-9 max-[700px]:gap-6 ${isLoading ? 'dashboard-loading' : 'dashboard-ready'}`}>
               {isLoading && <DashboardLoader />}
-              <DashboardBar
+              <AnalysisPeriodBar
                 periods={ANALYSIS_PERIODS}
                 selectedDays={analysisDays}
                 customRange={customRange}
                 pendingDays={pendingAnalysisDays}
                 isLoading={isPeriodLoading}
                 onPeriodChange={selectAnalysisPeriod}
-                displayMode={displayMode}
-                onDisplayModeChange={setDisplayMode}
+                scopeHint="Period applies to: Money Flow & transactions"
               />
-              <div className="dashboard-grid dashboard-grid--top grid gap-6 min-[900px]:grid-cols-2 min-[1180px]:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-                <BalanceCard
-                  balance={wallet.balance}
-                  error={error}
-                  displayMode={displayMode}
-                  ethPrice={wallet.ethPrice}
-                />
-                <PortfolioCard portfolio={wallet.portfolio} />
-                <IdentityCard stats={wallet.identity} />
-                <WalletPersonality personality={wallet.personality} />
-              </div>
-              <PortfolioHoldings
-                holdings={wallet.holdings}
-                totalValue={wallet.balance?.value}
-                valuationHistory={wallet.balance?.history}
-                periodLabel={wallet.periodLabel}
-                isLoading={isLoading}
-                displayMode={displayMode}
-                ethPrice={wallet.ethPrice}
-              />
-              <Summary flow={wallet.flow} />
-              <Activity
-                walletAddress={wallet.id}
-                transactions={wallet.transactions}
-                highlights={wallet.highlights}
-                periodLabel={wallet.periodLabel}
-                reportRange={wallet.reportRange}
-              />
-              <Insights insights={wallet.insights} />
-            </main>
-          ) : (
-            <main key={`flow-${wallet.id}`} className={isLoading ? 'dashboard-loading' : 'dashboard-ready'}>
-              {isLoading && <DashboardLoader />}
               <MoneyFlowTab wallet={wallet} />
             </main>
           )}
+
+          {activeTab === 'Portfolio' && (
+            <main className={`grid gap-9 max-[700px]:gap-6 ${isLoading ? 'dashboard-loading' : 'dashboard-ready'}`} key={`portfolio-${wallet.id}`}>
+              {isLoading && <DashboardLoader />}
+              <DashboardBar
+                displayMode={displayMode}
+                onDisplayModeChange={setDisplayMode}
+              />
+              <PortfolioHoldings
+                holdings={wallet.holdings}
+                valuationHistory={wallet.balance?.history}
+                isLoading={isLoading}
+                displayMode={displayMode}
+                ethPrice={wallet.ethPrice}
+                wallet={wallet}
+              />
+              <PortfolioChart
+                valuationHistory={wallet.valuationHistory}
+              />
+            </main>
+          )}
+
+          {activeTab === 'Insights' && (
+            <main className={`grid gap-9 max-[700px]:gap-6 ${isLoading ? 'dashboard-loading' : 'dashboard-ready'}`} key={`insights-${wallet.id}`}>
+              {isLoading && <DashboardLoader />}
+              <Insights insights={wallet.insights} wallet={wallet} periodLabel={wallet.periodLabel} />
+              <WalletHealth wallet={wallet} />
+              <WalletPersonality personality={wallet.personality} />
+            </main>
+          )}
+
           <BottomNav active={activeTab} onChange={setActiveTab} />
         </>
       ) : (
-        <main className="wallet-empty-state grid min-h-[58vh] place-content-center justify-items-center gap-3 rounded-[28px] border border-dashed border-[rgba(44,122,123,.2)] bg-white/55 px-6 py-12 text-center dark:border-[var(--border)] dark:bg-[rgba(17,24,39,.55)]">
+        <>
           {isLoading && <DashboardLoader />}
-          <span>Wallet analytics</span>
-          <h2>Enter a wallet address or ENS name</h2>
-          <p>Search an Ethereum address or .eth name to load its on-chain analytics.</p>
-        </main>
+          <LandingPreview
+            exampleWallets={exampleWallets}
+            onSelectExample={selectExampleWallet}
+            isLoading={isLoading}
+          />
+        </>
       )}
     </div>
   )
