@@ -1,26 +1,11 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { MaterialIcon } from '../common/MaterialIcon'
 import { Icon } from '../common/Icon'
 import { MetricExplainer } from '../common/MetricExplainer'
-import { highlightIcons } from '../../config/dashboard'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { TransactionModal } from './TransactionModal'
-
-function formatPeriod(periodLabel) {
-  const d = new Date()
-  return (periodLabel || d.toLocaleString('en-US', { month: 'long', year: 'numeric' })).toUpperCase()
-}
-
-function netGrowthValue(flow) {
-  if (flow.received.usd && flow.spent.usd) {
-    const recv = parseFloat(flow.received.usd.replace(/[^0-9.-]/g, '')) || 0
-    const spent = parseFloat(flow.spent.usd.replace(/[^0-9.-]/g, '')) || 0
-    return { value: recv - spent, symbol: '$', isUsd: true }
-  }
-  const recv = parseFloat(flow.received.value.replace(/[^0-9.-]/g, '')) || 0
-  const spent = parseFloat(flow.spent.value.replace(/[^0-9.-]/g, '')) || 0
-  return { value: recv - spent, symbol: 'ETH', isUsd: false }
-}
+import { MoneyFlowPanel } from './MoneyFlowPanel'
+import { filterTransactionsByFlow } from './moneyFlow.utils'
 
 function getDateGroup(meta) {
   const m = meta.toLowerCase()
@@ -34,14 +19,16 @@ function getDateGroup(meta) {
 }
 
 export function MoneyFlowTab({ wallet }) {
-  const { balance, flow, portfolio, transactions, highlights = [], nftBreakdown } = wallet
+  const { balance, flow, portfolio, transactions, nftBreakdown, moneyFlowStats, pricedOnlyDisclaimer } = wallet
   const portfolioMetrics = portfolio.metrics || []
   const score = portfolio.score || 0
   const dashArray = `${Math.min(score, 100)} ${100 - Math.min(score, 100)}`
+  const flowStats = moneyFlowStats
+  const signMismatchNote = flow.signMismatchNote || wallet.signMismatchNote
 
   const tip = (() => {
-    const recv = parseFloat(flow.received.value.replace(/[^0-9.-]/g, '')) || 0
-    const spent = parseFloat(flow.spent.value.replace(/[^0-9.-]/g, '')) || 0
+    const recv = Number(flow.received.amount ?? 0)
+    const spent = Number(flow.spent.amount ?? 0)
     if (spent === 0) return 'All income retained this period. Excellent saving!'
     const ratio = Math.round(recv / spent)
     if (ratio >= 2) return `Great job! You received ${ratio}x more than you spent this period.`
@@ -125,7 +112,15 @@ export function MoneyFlowTab({ wallet }) {
     ? `Your score of ${score}/100 is ${scoreLabel.toLowerCase()}. Increasing transaction activity and protocol engagement could improve it.`
     : `Your score of ${score}/100 indicates ${scoreLabel.toLowerCase()} activity. Regular wallet usage across diverse protocols may help.`
 
-  const recentTx = transactions.slice(0, 10)
+  const [selectedTx, setSelectedTx] = useState(null)
+  const [flowFilter, setFlowFilter] = useState('all')
+
+  const filteredTransactions = useMemo(
+    () => filterTransactionsByFlow(transactions, flowFilter),
+    [transactions, flowFilter],
+  )
+
+  const recentTx = filteredTransactions.slice(0, 10)
   const groups = {}
   recentTx.forEach(tx => {
     const group = getDateGroup(tx.meta)
@@ -134,64 +129,17 @@ export function MoneyFlowTab({ wallet }) {
   })
   const groupOrder = ['Today', 'Yesterday', 'This Week', 'Older']
   const groupedTransactions = groupOrder.filter(g => groups[g]).map(date => ({ date, items: groups[date] }))
-  const [selectedTx, setSelectedTx] = useState(null)
 
   return (
     <div className="grid gap-9 max-[700px]:gap-6">
-      {/* Money Summary */}
-      <div className="space-y-[18px]">
-        <div className="bg-teal-50/50 dark:bg-teal-950/20 border border-teal-100/50 dark:border-teal-900/30 rounded-2xl p-4 max-[480px]:p-3 flex items-center gap-3">
-          <MaterialIcon icon="auto_awesome" fill className="text-teal-400 shrink-0 text-lg max-[480px]:text-base" />
-          <p className="text-sm max-[480px]:text-xs font-semibold text-teal-900 dark:text-teal-100">{tip}</p>
-        </div>
-        <MetricExplainer
-          as="div"
-          className="apple-card p-[25px] max-[480px]:p-5"
-          explanation={{
-            title: 'Money Flow',
-            summary: 'Tracks all ETH movement in and out of your wallet during the selected period. Net Growth shows whether you received more than you spent.',
-            formula: 'Net Growth = Total Received ETH − Total Spent ETH',
-            details: [
-              'Received: Total value of all incoming ETH transfers to your wallet.',
-              'Spent: Total value of all outgoing ETH transfers including contract interactions.',
-              'Positive Net Growth means you received more than you spent.',
-              'Values are in ETH based on raw on-chain transaction data from BlobLens.',
-            ],
-          }}
-        >
-          <div className="flex justify-between items-center mb-5 max-[480px]:flex-col max-[480px]:items-start max-[480px]:gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Money Flow</span>
-            <span className="px-3 py-1 bg-teal-400/10 text-teal-400 text-[10px] font-bold rounded-full">{formatPeriod(flow.periodLabel)}</span>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm max-[480px]:text-xs font-medium text-slate-500 dark:text-slate-400">Net Growth</p>
-            {(() => { const net = netGrowthValue(flow); return (
-              <>
-                <h2 className="text-5xl max-[480px]:text-3xl font-bold tracking-tight text-teal-400">
-                  {net.value >= 0 ? '+' : ''}{net.isUsd ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: Math.abs(net.value) >= 1_000_000 ? 'compact' : 'standard' }).format(net.value) : `${net.value.toLocaleString()} ETH`}
-                </h2>
-                {net.isUsd && (
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {netGrowthValue({ received: { value: flow.received.value, usd: null }, spent: { value: flow.spent.value, usd: null } }).value >= 0 ? '+' : ''}{netGrowthValue({ received: { value: flow.received.value, usd: null }, spent: { value: flow.spent.value, usd: null } }).value.toLocaleString()} ETH
-                  </p>
-                )}
-              </>
-            )})()}
-          </div>
-          <div className="grid grid-cols-2 gap-8 max-[480px]:gap-4 mt-6">
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Received</p>
-              <p className="text-2xl font-bold text-teal-400">{flow.received.usd || flow.received.value}</p>
-              {flow.received.usd && <p className="text-xs text-slate-400 dark:text-slate-500">{flow.received.value}</p>}
-            </div>
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Spent</p>
-              <p className="text-2xl font-bold text-rose-500">{flow.spent.usd || flow.spent.value}</p>
-              {flow.spent.usd && <p className="text-xs text-slate-400 dark:text-slate-500">{flow.spent.value}</p>}
-            </div>
-          </div>
-        </MetricExplainer>
-      </div>
+      <MoneyFlowPanel
+        flow={flow}
+        flowStats={flowStats}
+        signMismatchNote={signMismatchNote}
+        tip={tip}
+        activeFilter={flowFilter}
+        onFilterChange={setFlowFilter}
+      />
 
       {/* Portfolio Snapshot */}
       <MetricExplainer
@@ -213,6 +161,9 @@ export function MoneyFlowTab({ wallet }) {
             <div>
               <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-1.5">Portfolio Snapshot</p>
               <h3 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100 max-[480px]:text-3xl">{balance.value}</h3>
+              {balance.coverageLabel && (
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{balance.coverageLabel}</p>
+              )}
             </div>
             <MetricExplainer
               as="div"
@@ -223,6 +174,11 @@ export function MoneyFlowTab({ wallet }) {
               <div className="inline-flex items-center px-4 py-2 rounded-2xl bg-teal-400/10 border border-teal-400/20 backdrop-blur-sm">
                 <p className="text-xl font-bold text-teal-400">{score}<span className="text-xs text-teal-400/50 ml-0.5">/100</span></p>
               </div>
+              {(portfolio.scoreDisclaimer || pricedOnlyDisclaimer) && (
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 max-w-[18ch] ml-auto max-[480px]:ml-0">
+                  {portfolio.scoreDisclaimer || pricedOnlyDisclaimer}
+                </p>
+              )}
             </MetricExplainer>
           </div>
           <div className="flex items-center gap-3 text-sm max-[480px]:text-xs font-medium pt-3 border-t border-gray-100 dark:border-white/10">
@@ -348,41 +304,41 @@ export function MoneyFlowTab({ wallet }) {
       </section>
 
       {(nftBreakdown?.incoming > 0 || nftBreakdown?.outgoing > 0) && (
-        <section className="apple-card p-[22px] max-[480px]:p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
+        <section className="apple-card nft-activity-card p-[22px] max-[480px]:p-4">
+          <div className="flex items-center justify-between mb-4 max-[480px]:mb-3">
+            <div className="min-w-0">
               <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-1">NFT Activity</p>
               <p className="text-xs text-slate-400 dark:text-slate-500">{nftBreakdown.total} total transfers</p>
             </div>
-            <MaterialIcon icon="stadia_controller" className="text-teal-400 text-2xl" />
+            <MaterialIcon icon="stadia_controller" className="text-teal-400 text-2xl shrink-0" />
           </div>
-          <div className="grid grid-cols-[1fr_auto] gap-6 items-center">
-            <div className="grid gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+          <div className="nft-activity-body grid grid-cols-[1fr_auto] gap-6 max-[480px]:gap-4 items-center">
+            <div className="grid gap-3 min-w-0">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
                   <span className="w-2.5 h-2.5 rounded-full bg-teal-400 shrink-0" />
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Received</span>
+                  <span className="text-sm max-[480px]:text-xs font-medium text-slate-700 dark:text-slate-300">Received</span>
                 </div>
-                <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{nftBreakdown.incoming.toLocaleString()}</span>
+                <span className="text-sm max-[480px]:text-xs font-bold text-slate-900 dark:text-slate-100 tabular-nums">{nftBreakdown.incoming.toLocaleString()}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
                   <span className="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0" />
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Sent</span>
+                  <span className="text-sm max-[480px]:text-xs font-medium text-slate-700 dark:text-slate-300">Sent</span>
                 </div>
-                <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{nftBreakdown.outgoing.toLocaleString()}</span>
+                <span className="text-sm max-[480px]:text-xs font-bold text-slate-900 dark:text-slate-100 tabular-nums">{nftBreakdown.outgoing.toLocaleString()}</span>
               </div>
               <div className="pt-2 border-t border-gray-100 dark:border-white/10">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Net</span>
-                  <span className={`text-sm font-bold ${nftBreakdown.incoming >= nftBreakdown.outgoing ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  <span className={`text-sm max-[480px]:text-xs font-bold tabular-nums ${nftBreakdown.incoming >= nftBreakdown.outgoing ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                     {nftBreakdown.incoming >= nftBreakdown.outgoing ? '+' : ''}{(nftBreakdown.incoming - nftBreakdown.outgoing).toLocaleString()}
                   </span>
                 </div>
               </div>
             </div>
-            <div className="shrink-0">
-              <ResponsiveContainer width={110} height={110}>
+            <div className="nft-activity-donut shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart role="img" aria-label={`NFT transfers: ${nftBreakdown.incoming} received, ${nftBreakdown.outgoing} sent`}>
                   <Pie
                     data={[
@@ -390,15 +346,15 @@ export function MoneyFlowTab({ wallet }) {
                       { value: nftBreakdown.outgoing, color: '#fb7185' },
                     ]}
                     cx="50%" cy="50%"
-                    innerRadius={30}
-                    outerRadius={48}
+                    innerRadius="58%"
+                    outerRadius="96%"
                     startAngle={90}
                     endAngle={-270}
                     dataKey="value"
                     stroke="none"
                   >
-                    {[nftBreakdown.incoming, nftBreakdown.outgoing].map((entry, index) => (
-                      <Cell key={index} fill={[ '#2dd4bf', '#fb7185' ][index]} />
+                    {[nftBreakdown.incoming, nftBreakdown.outgoing].map((_, index) => (
+                      <Cell key={index} fill={['#2dd4bf', '#fb7185'][index]} />
                     ))}
                   </Pie>
                 </PieChart>
@@ -411,80 +367,63 @@ export function MoneyFlowTab({ wallet }) {
       {/* Money Journey */}
       <section className="min-[900px]:px-0.5">
         {groupedTransactions.length > 0 ? (
-          <div className="activity-layout grid grid-cols-[minmax(0,1.65fr)_minmax(300px,.9fr)] items-stretch gap-[18px] max-[1050px]:grid-cols-[minmax(0,1.35fr)_minmax(270px,.85fr)] max-[1050px]:gap-[14px] max-[899px]:grid-cols-1">
-            <div className="card activity-feed rounded-3xl border-0 p-[22px] max-[1050px]:p-[18px] max-[480px]:rounded-[20px] max-[480px]:p-3.5">
-              <div className="activity-card__heading flex min-h-[35px] items-center justify-between gap-4">
-                <div className="grid gap-[3px]">
-                  <span>{flow.periodLabel}</span>
-                  <h2>Recent Activity</h2>
-                </div>
+          <div className="card activity-feed rounded-3xl border-0 p-[22px] max-[1050px]:p-[18px] max-[480px]:rounded-[20px] max-[480px]:p-3.5">
+            <div className="activity-card__heading flex min-h-[35px] items-center justify-between gap-4">
+              <div className="grid gap-[3px]">
+                <span>{flow.periodLabel}{flowFilter !== 'all' ? ` · ${flowFilter === 'in' ? 'Received' : 'Spent'}` : ''}</span>
+                <h2>Recent Activity</h2>
               </div>
-              <div className="transaction-list mt-3 grid grid-cols-1 gap-[3px]">
-                {groupedTransactions.map((group) => (
-                  <div key={group.date}>
-                    <div className="px-1 pt-2 pb-1">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.15em]">{group.date}</span>
-                    </div>
-                    {group.items.map((tx) => (
-                      <article
-                        key={tx.title}
-                        className={`transaction transaction--${tx.tone} relative grid min-w-0 cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto_minmax(72px,auto)] items-center gap-[11px] rounded-[14px] border-0 bg-transparent p-[13px_11px] max-[1050px]:grid-cols-[auto_minmax(0,1fr)_auto] max-[700px]:grid-cols-[auto_minmax(0,1fr)] max-[480px]:gap-[9px] max-[480px]:p-[9px_7px]`}
-                        tabIndex="0"
-                        role="button"
-                        onClick={() => setSelectedTx(tx)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedTx(tx) } }}
-                      >
-                        <div className="transaction__visual">
-                          <span className={`icon-box ${tx.tone}`}><Icon name={tx.icon} alt="" /></span>
-                          <span className={`protocol-logo protocol-logo--${tx.tone}`} title={tx.protocol}>
-                            {tx.protocolMark}
-                          </span>
-                        </div>
-                        <div className="transaction__main grid min-w-0 gap-1">
-                          <strong>{tx.displayTitle}</strong>
-                          <div className="transaction__context">
-                            <span className="transaction__protocol">{tx.protocol}</span>
-                            <span aria-hidden="true">•</span>
-                            <span className="chain-badge">{tx.chain}</span>
-                          </div>
-                        </div>
-                        <div className="transaction__amount">
-                          <strong className={tx.positive ? 'positive' : ''}>{tx.amount}</strong>
-                          <span>{tx.crypto}</span>
-                        </div>
-                        <span className="transaction__time">{tx.meta}</span>
-                      </article>
-                    ))}
-                  </div>
-                ))}
-              </div>
+              {flowFilter !== 'all' && (
+                <button type="button" className="money-flow-clear-filter" onClick={() => setFlowFilter('all')}>
+                  Clear filter
+                </button>
+              )}
             </div>
-
-            <aside className="card highlights-card rounded-3xl border-0 p-[22px] max-[1050px]:p-[18px] max-[480px]:rounded-[20px] max-[480px]:p-3.5">
-              <div className="activity-card__heading flex min-h-[35px] items-center justify-between gap-4">
-                <div className="grid gap-[3px]">
-                  <span>{flow.periodLabel}</span>
-                  <h2>Key Highlights</h2>
-                </div>
-              </div>
-              <div className="highlights-list mt-3 grid gap-[7px] max-[899px]:grid-cols-2 max-[480px]:grid-cols-1">
-                {highlights.map((highlight) => {
-                  const HighlightIcon = highlightIcons[highlight.icon]
-                  return (
+            <div className="transaction-list mt-3 grid grid-cols-1 gap-[3px]">
+              {groupedTransactions.map((group) => (
+                <div key={group.date}>
+                  <div className="px-1 pt-2 pb-1">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.15em]">{group.date}</span>
+                  </div>
+                  {group.items.map((tx) => (
                     <article
-                      key={highlight.label}
-                      className={`highlight-item highlight-item--${highlight.tone} grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2.5 rounded-[15px] p-[11px]`}
+                      key={tx.title}
+                      className={`transaction transaction--${tx.tone} relative grid min-w-0 cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto_minmax(72px,auto)] items-center gap-[11px] rounded-[14px] border-0 bg-transparent p-[13px_11px] max-[1050px]:grid-cols-[auto_minmax(0,1fr)_auto] max-[700px]:grid-cols-[auto_minmax(0,1fr)] max-[480px]:gap-[9px] max-[480px]:p-[9px_7px]`}
+                      tabIndex="0"
+                      role="button"
+                      onClick={() => setSelectedTx(tx)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedTx(tx) } }}
                     >
-                      <span className="highlight-item__icon"><HighlightIcon aria-hidden="true" /></span>
-                      <div className="grid min-w-0 gap-[3px]">
-                        <span>{highlight.label}</span>
-                        <strong>{highlight.value} <small>• {highlight.detail}</small></strong>
+                      <div className="transaction__visual">
+                        <span className={`icon-box ${tx.tone}`}><Icon name={tx.icon} alt="" /></span>
+                        <span className={`protocol-logo protocol-logo--${tx.tone}`} title={tx.protocol}>
+                          {tx.protocolMark}
+                        </span>
                       </div>
+                      <div className="transaction__main grid min-w-0 gap-1">
+                        <strong>{tx.displayTitle}</strong>
+                        <div className="transaction__context">
+                          <span className="transaction__protocol">{tx.protocol}</span>
+                          <span aria-hidden="true">•</span>
+                          <span className="chain-badge">{tx.chain}</span>
+                        </div>
+                      </div>
+                      <div className="transaction__amount">
+                        {tx.amount ? (
+                          <>
+                            <strong className={tx.positive ? 'positive' : ''}>{tx.amount}</strong>
+                            <span>{tx.crypto}</span>
+                          </>
+                        ) : (
+                          <span className="text-slate-400 text-[11px]">—</span>
+                        )}
+                      </div>
+                      <span className="transaction__time">{tx.meta}</span>
                     </article>
-                  )
-                })}
-              </div>
-            </aside>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="card activity-feed rounded-3xl border-0 p-[22px] max-[480px]:p-5 text-center">
@@ -492,7 +431,16 @@ export function MoneyFlowTab({ wallet }) {
               <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-3">
                 <MaterialIcon icon="receipt_long" className="text-slate-400 text-2xl" />
               </div>
-              <p className="text-sm text-slate-500">No transactions found for this period.</p>
+              <p className="text-sm text-slate-500">
+                {flowFilter !== 'all'
+                  ? `No ${flowFilter === 'in' ? 'received' : 'spent'} transactions in this period.`
+                  : 'No transactions found for this period.'}
+              </p>
+              {flowFilter !== 'all' && (
+                <button type="button" className="money-flow-clear-filter mt-3" onClick={() => setFlowFilter('all')}>
+                  Show all activity
+                </button>
+              )}
             </div>
           </div>
         )}
