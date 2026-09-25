@@ -107,7 +107,7 @@ export function PortfolioChart({ valuationHistory }) {
         <div className="flex items-center gap-2.5 min-w-0">
           <MaterialIcon icon="show_chart" className="text-teal-400 text-xl shrink-0" />
           <div className="min-w-0">
-            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Portfolio History</span>
+            <span className="text-[10px] font-bold text-[var(--muted)] dark:text-[var(--muted)] uppercase tracking-[0.2em]">Portfolio History</span>
             <h2 className="text-base font-bold mt-0.5 truncate">
               {activeChartLabel}{isPhone ? '' : ' · Current holdings'}
             </h2>

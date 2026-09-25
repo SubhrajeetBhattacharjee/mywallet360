@@ -3708,8 +3708,8 @@ html[data-theme="dark"] .chart-tooltip-modern {
 .tx-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 11px; }
 .tx-table thead th {
   position: sticky; top: 0; z-index: 1;
-  padding: 10px 12px; border-bottom: 1px solid rgba(44,122,123,.12);
-  background: #f7fbfb; color: #526b6c; font-size: 9px; font-weight: 700;
+  padding: 10px 12px; border-bottom: 1px solid var(--border);
+  background: var(--bg); color: var(--muted); font-size: 9px; font-weight: 700;
   letter-spacing: .08em; text-transform: uppercase; text-align: left; white-space: nowrap;
 }
 .tx-table-row td { padding: 10px 12px; border-bottom: 1px solid rgba(44,122,123,.08); vertical-align: middle; }
@@ -3717,14 +3717,14 @@ html[data-theme="dark"] .chart-tooltip-modern {
 .tx-table-row:hover td { background: rgba(24,197,192,.04); }
 .tx-table-empty { padding: 28px 16px !important; text-align: center; color: var(--muted); }
 .tx-table-hash { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
-.tx-table-hash__link { color: #1a6461; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.tx-table-hash__link { color: var(--ink); font-weight: 700; text-decoration: none; white-space: nowrap; }
 .tx-table-hash__link:hover { text-decoration: underline; }
 .tx-table-copy {
   display: inline-flex; align-items: center; justify-content: center;
   width: 22px; height: 22px; padding: 0; border: 0; border-radius: 6px;
-  background: transparent; color: #7a9495; cursor: pointer;
+  background: transparent; color: var(--muted); cursor: pointer;
 }
-.tx-table-copy:hover { background: rgba(24,197,192,.12); color: #1a6461; }
+.tx-table-copy:hover { background: var(--bg); color: var(--ink); }
 .tx-table-sort {
   display: inline-flex; align-items: center; gap: 3px; padding: 0; border: 0;
   background: none; color: inherit; font: inherit; letter-spacing: inherit;
@@ -3734,7 +3734,7 @@ html[data-theme="dark"] .chart-tooltip-modern {
 .tx-table-method-wrap { display: inline-flex; align-items: center; gap: 1px; }
 .tx-table-method {
   display: inline-flex; align-items: center; max-width: 140px; padding: 3px 8px;
-  border-radius: 999px; background: rgba(24,197,192,.12); color: #1a6461;
+  border-radius: 999px; background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--ink);
   font-size: 10px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .tx-table-method__asterisk {
@@ -3749,14 +3749,14 @@ html[data-theme="dark"] .chart-tooltip-modern {
 .tx-table-direction--out { background: rgba(223,135,52,.12); color: #c56a12; }
 .tx-table-direction--neutral { color: var(--muted); }
 .tx-table-address { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 160px; }
-.tx-table-address__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #33494a; font-weight: 600; }
-.tx-table-amount, .tx-table-fee { font-weight: 700; color: #1f3334; white-space: nowrap; }
+.tx-table-address__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); font-weight: 600; }
+.tx-table-amount, .tx-table-fee { font-weight: 700; color: var(--ink); white-space: nowrap; }
 .tx-table-pagination { display: flex; align-items: center; justify-content: center; gap: 12px; }
 .tx-table-page-btn {
-  padding: 7px 14px; border: 1px solid rgba(44,122,123,.18); border-radius: 999px;
-  background: #fff; color: #1a6461; font-size: 11px; font-weight: 700; cursor: pointer;
+  padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px;
+  background: var(--surface); color: var(--ink); font-size: 11px; font-weight: 700; cursor: pointer;
 }
-.tx-table-page-btn:hover:not(:disabled) { border-color: rgba(24,197,192,.45); background: #f0fbfb; }
+.tx-table-page-btn:hover:not(:disabled) { border-color: var(--primary); background: var(--bg); }
 .tx-table-page-btn:disabled { opacity: .45; cursor: not-allowed; }
 .tx-table-page-label { color: #526b6c; font-size: 11px; font-weight: 600; }
 
@@ -4551,3 +4551,6 @@ html[data-theme="dark"] .chart-tooltip-modern {
   .money-flow-stat:hover,
   .money-flow-donut__legend button:hover { transform: none; }
 }
+
+html { scroll-behavior: smooth; }
+

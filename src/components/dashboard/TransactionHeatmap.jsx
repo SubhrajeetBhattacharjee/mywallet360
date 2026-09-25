@@ -213,12 +213,12 @@ export function TransactionHeatmap({ dailyTransactionCounts, activityStats, tran
         <div className="flex items-center gap-2.5">
           <MaterialIcon icon="calendar_month" className="text-teal-400 text-xl" />
           <div>
-            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Transaction Activity</span>
+            <span className="text-[10px] font-bold text-[var(--muted)] dark:text-[var(--muted)] uppercase tracking-[0.2em]">Transaction Activity</span>
             <h2 className="text-base font-bold mt-0.5">Heatmap</h2>
           </div>
         </div>
         {dateRangeLabel && (
-          <p className="heatmap-range heatmap-range--header text-[10px] font-semibold text-slate-500 dark:text-slate-400 text-right shrink-0">
+          <p className="heatmap-range heatmap-range--header text-[10px] font-semibold text-[var(--muted)] dark:text-[var(--muted)] text-right shrink-0">
             {dateRangeLabel}
           </p>
         )}
@@ -260,11 +260,11 @@ export function TransactionHeatmap({ dailyTransactionCounts, activityStats, tran
       )}
 
       <div className="heatmap-stats flex flex-wrap items-center gap-x-4 gap-y-1 mb-4 text-xs">
-        <span className="text-slate-500 dark:text-slate-400">
-          <strong className="text-slate-900 dark:text-slate-100">{visibleStats.totalTxns.toLocaleString()}</strong> txns in view
+        <span className="text-[var(--muted)] dark:text-[var(--muted)]">
+          <strong className="text-[var(--ink)] dark:text-slate-100">{visibleStats.totalTxns.toLocaleString()}</strong> txns in view
         </span>
-        <span className="text-slate-500 dark:text-slate-400">
-          <strong className="text-slate-900 dark:text-slate-100">{visibleStats.activeDays.toLocaleString()}</strong> active days
+        <span className="text-[var(--muted)] dark:text-[var(--muted)]">
+          <strong className="text-[var(--ink)] dark:text-slate-100">{visibleStats.activeDays.toLocaleString()}</strong> active days
         </span>
       </div>
 

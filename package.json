@@ -12,12 +12,17 @@
     "check": "npm run lint && npm test && npm run build && npm --prefix backend test"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "@iconify-icons/fluent-emoji": "^1.2.11",
     "@iconify-icons/material-symbols": "^1.2.58",
     "@iconify/react": "^6.0.2",
+    "@supabase/supabase-js": "^2.117.1",
+    "ethereum-blockies-base64": "^1.0.2",
+    "gsap": "^3.15.0",
     "lucide-react": "^1.17.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-router-dom": "^7.18.4",
     "recharts": "^3.8.1"
   },
   "devDependencies": {

@@ -89,7 +89,7 @@ export function WalletHealth({ wallet }) {
         <div className="flex items-center gap-2.5">
           <MaterialIcon icon="security" className="text-teal-400 text-xl" />
           <div>
-            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Security</span>
+            <span className="text-[10px] font-bold text-[var(--muted)] dark:text-[var(--muted)] uppercase tracking-[0.2em]">Security</span>
             <h2 className="text-base font-bold mt-0.5">Wallet Health</h2>
           </div>
         </div>
@@ -107,7 +107,7 @@ export function WalletHealth({ wallet }) {
             <span className="text-[9px] opacity-70">/100</span>
           </div>
           {pricedOnlyDisclaimer && (
-            <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-1.5 max-w-[16ch] ml-auto">
+            <p className="text-[9px] text-[var(--muted)] dark:text-[var(--muted)] mt-1.5 max-w-[16ch] ml-auto">
               {pricedOnlyDisclaimer}
             </p>
           )}
@@ -118,7 +118,7 @@ export function WalletHealth({ wallet }) {
         {healthIndicators.map((indicator) => (
           <div
             key={indicator.label}
-            className="health-indicator flex items-center gap-2.5 p-3 rounded-xl bg-gray-50 dark:bg-white/[0.04]"
+            className="health-indicator flex items-center gap-2.5 p-3 rounded-xl bg-gray-50 dark:bg-[var(--surface)]/[0.04]"
           >
             <MaterialIcon
               icon={indicator.icon}
@@ -129,7 +129,7 @@ export function WalletHealth({ wallet }) {
               }`}
             />
             <div className="min-w-0">
-              <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+              <span className="text-[9px] font-bold text-[var(--muted)] dark:text-[var(--muted)] uppercase tracking-wider block">
                 {indicator.label}
               </span>
               <strong className="text-sm">{indicator.value}</strong>
@@ -140,7 +140,7 @@ export function WalletHealth({ wallet }) {
       
       {unpricedAssets.length > 0 && (
         <details className="health-details text-xs">
-          <summary className="flex items-center gap-2 py-2 cursor-pointer text-slate-500 dark:text-slate-400 font-semibold hover:text-slate-700 dark:hover:text-slate-300">
+          <summary className="flex items-center gap-2 py-2 cursor-pointer text-[var(--muted)] dark:text-[var(--muted)] font-semibold hover:text-[var(--ink)] dark:hover:text-[var(--muted)]">
             <MaterialIcon icon="expand_more" className="text-base" />
             <span>Assets without market data ({totalUnpriced})</span>
           </summary>
@@ -148,10 +148,10 @@ export function WalletHealth({ wallet }) {
             {unpricedAssets.map((asset) => (
               <div
                 key={`${asset.contractAddress || asset.symbol}`}
-                className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-gray-50 dark:bg-white/[0.03]"
+                className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-gray-50 dark:bg-[var(--surface)]/[0.03]"
               >
                 <span className="font-medium">{asset.symbol || 'Unknown'}</span>
-                <span className="text-slate-400">{asset.rawBalance || asset.balance}</span>
+                <span className="text-[var(--muted)]">{asset.rawBalance || asset.balance}</span>
               </div>
             ))}
           </div>

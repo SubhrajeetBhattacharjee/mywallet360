@@ -205,12 +205,12 @@ export function ActivityAmountWithTooltip({ item }) {
   })
 
   if (!zeroTooltip) {
-    return <span className="text-slate-400 text-[11px]">—</span>
+    return <span className="text-[var(--muted)] text-[11px]">—</span>
   }
 
   return (
     <ContextTooltip content={zeroTooltip}>
-      <span className="text-slate-400 text-[11px]">0 ETH</span>
+      <span className="text-[var(--muted)] text-[11px]">0 ETH</span>
     </ContextTooltip>
   )
 }

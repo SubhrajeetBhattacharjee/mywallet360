@@ -5,11 +5,13 @@ export function round(value, decimals = 4) {
 }
 
 export function fromWei(value) {
-  return Number(value || 0) / WEI_PER_ETH;
+  const raw = value === "0x" ? 0 : value || 0;
+  return Number(raw) / WEI_PER_ETH;
 }
 
 export function tokenAmount(value, decimals) {
-  return Number(value || 0) / 10 ** Number(decimals || 0);
+  const raw = value === "0x" ? 0 : value || 0;
+  return Number(raw) / 10 ** Number(decimals || 0);
 }
 
 export function percentage(part, total) {

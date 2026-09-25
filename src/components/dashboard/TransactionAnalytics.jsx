@@ -69,6 +69,7 @@ function AnalyticsTooltip({
   coordinate,
   viewBox,
   hiddenKeys = [],
+  fullData = [],
 }) {
   if (!active || !payload?.length) return null
 
@@ -84,26 +85,45 @@ function AnalyticsTooltip({
   const placeLeft = chartWidth > 0 && cursorX > chartLeft + chartWidth * 0.55
   const allZero = visibleSeries.every((item) => !(Number(point[item.key]) || 0))
 
+  // Find previous point for percentage change
+  const currentIndex = fullData.findIndex(d => d.date === point.date)
+  const prevPoint = currentIndex > 0 ? fullData[currentIndex - 1] : null
+
   return (
-    <div className={`chart-tooltip-modern analytics-tooltip ${placeLeft ? 'analytics-tooltip--left' : ''}`}>
-      <span className="chart-tooltip-date">
+    <div className={`bg-[var(--surface)] border border-[var(--border)] shadow-xl shadow-[#0f172a]/[0.05] rounded-xl p-4 flex flex-col gap-2.5 min-w-[200px] transition-all duration-200 ${placeLeft ? '-translate-x-[calc(100%+32px)]' : ''}`}>
+      <span className="text-[11.5px] font-bold text-[var(--muted)] uppercase tracking-wider border-b border-[var(--border)] pb-2 mb-1">
         {formatAnalyticsDate(label || point.date, { year: 'numeric' })}
       </span>
       {allZero ? (
-        <div className="analytics-tooltip__quiet">No activity on this day</div>
+        <div className="text-[13px] font-semibold text-[var(--muted)] italic">No activity on this day</div>
       ) : visibleSeries.map((item) => {
         const raw = Number(point[item.key]) || 0
+        const prevRaw = prevPoint ? (Number(prevPoint[item.key]) || 0) : null
         const exceeds = clipped && softMax > 0 && raw > softMax
+        
+        let pctChange = null
+        if (prevRaw !== null) {
+          if (prevRaw === 0 && raw > 0) pctChange = 100
+          else if (prevRaw > 0) pctChange = ((raw - prevRaw) / prevRaw) * 100
+        }
+
         return (
-          <div key={item.key} className="analytics-tooltip__row">
-            <span className="analytics-tooltip__label">
-              <i style={{ background: item.color }} />
-              {item.label}
-            </span>
-            <strong>
-              {formatSeriesValue(item.key, raw)}
-              {exceeds ? ' · above scale' : ''}
-            </strong>
+          <div key={item.key} className="flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--muted)]">
+                <i className="w-2.5 h-2.5 rounded-full" style={{ background: item.color, boxShadow: `0 0 8px ${item.color}80` }} />
+                {item.label}
+              </span>
+              <strong className="text-[14px] font-extrabold text-[var(--ink)] whitespace-nowrap">
+                {formatSeriesValue(item.key, raw)}
+              </strong>
+            </div>
+            {pctChange !== null && pctChange !== 0 && (
+              <div className={`text-[10.5px] font-bold self-end flex items-center gap-1 ${pctChange > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                {pctChange > 0 ? '↗' : '↘'} {Math.abs(pctChange).toFixed(1)}% vs prev day
+              </div>
+            )}
+            {exceeds && <span className="text-[10px] text-amber-500 font-bold self-end uppercase">(Above Scale)</span>}
           </div>
         )
       })}
@@ -113,19 +133,23 @@ function AnalyticsTooltip({
 
 function InteractiveLegend({ series, tabId, hiddenByTab, onToggle, isPhone }) {
   return (
-    <div className="analytics-legend" aria-label="Series legend">
+    <div className="flex flex-wrap items-center gap-2 mb-6" aria-label="Series legend">
       {series.map((item) => {
         const hidden = isSeriesHidden(hiddenByTab, tabId, item.key)
         return (
           <button
             key={item.key}
             type="button"
-            className={`analytics-legend__item${hidden ? ' analytics-legend__item--hidden' : ''}`}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-all cursor-pointer border ${
+              hidden 
+                ? 'bg-transparent border-[var(--border)] text-[var(--muted)] hover:bg-[var(--bg)]' 
+                : 'bg-[var(--surface)] border-[var(--border)] text-[var(--ink)] shadow-sm shadow-[#0f172a]/[0.02] hover:bg-[var(--bg)]'
+            }`}
             aria-pressed={!hidden}
             title={hidden ? `Show ${item.label}` : `Hide ${item.label}`}
             onClick={() => onToggle(item.key)}
           >
-            <i style={{ background: item.color }} />
+            <i className={`w-2 h-2 rounded-full transition-opacity ${hidden ? 'opacity-40' : 'opacity-100'}`} style={{ background: item.color }} />
             <span>{isPhone ? item.label.replace(' Address', '') : item.label}</span>
           </button>
         )
@@ -154,19 +178,21 @@ function FeeStatCards({ rows, ethPrice, isPhone, hiddenKeys }) {
   ]
 
   return (
-    <div className="analytics-summary analytics-summary--2">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
       {cards.map((card) => {
         const usd = formatUsdValue(card.total, ethPrice)
         const dimmed = hiddenKeys.includes(card.key)
         return (
           <div
             key={card.key}
-            className={`analytics-summary__chip${dimmed ? ' analytics-summary__chip--dim' : ''}`}
-            style={{ '--chip-accent': card.accent }}
+            className={`bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 shadow-sm flex flex-col gap-1 transition-opacity ${dimmed ? 'opacity-40' : 'opacity-100'}`}
           >
-            <span className="analytics-summary__label">{card.label}</span>
-            <strong>{formatSeriesValue(card.key, card.total)}</strong>
-            <small>{usd ? `${usd} at current price` : 'USD value unavailable'}</small>
+            <div className="flex items-center gap-2 mb-1">
+              <i className="w-2.5 h-2.5 rounded-full" style={{ background: card.accent }} />
+              <span className="text-[12px] font-bold text-[var(--muted)] uppercase tracking-wider">{card.label}</span>
+            </div>
+            <strong className="text-[24px] font-extrabold text-[var(--ink)] tracking-tight">{formatSeriesValue(card.key, card.total)}</strong>
+            <small className="text-[13px] font-medium text-[var(--muted)] mt-1">{usd ? `${usd} at current price` : 'USD value unavailable'}</small>
           </div>
         )
       })}
@@ -242,13 +268,14 @@ function renderSeries({
           maxBarSize={maxBarSize}
           hide={hidden}
           yAxisId={item.yAxisId || 'left'}
-          isAnimationActive={false}
+          isAnimationActive={true}
+          animationDuration={600}
           legendType="none"
         />
       )
     }
 
-    if (chartType === 'area' && item.chartType === 'area') {
+    if (chartType === 'area' && item.chartType !== 'line') {
       return (
         <Area
           key={item.key}
@@ -260,9 +287,10 @@ function renderSeries({
           fill={`url(#analyticsFill-${item.key})`}
           hide={hidden}
           yAxisId={item.yAxisId || 'left'}
-          isAnimationActive={false}
+          isAnimationActive={true}
+          animationDuration={800}
           legendType="none"
-          activeDot={activeDot}
+          activeDot={{ ...activeDot, r: isPhone ? 4 : 5, className: 'animate-pulse' }}
         />
       )
     }
@@ -276,31 +304,32 @@ function renderSeries({
         stroke={item.color}
         strokeWidth={strokeWidth}
         dot={false}
-        activeDot={activeDot}
+        activeDot={{ ...activeDot, r: isPhone ? 4 : 5, className: 'animate-pulse' }}
         hide={hidden}
         yAxisId={item.yAxisId || (chartType === 'combo' ? 'right' : 'left')}
-        isAnimationActive={false}
+        isAnimationActive={true}
+        animationDuration={800}
         legendType="none"
       />
     )
   })
 }
 
-export function TransactionAnalytics({
-  dailyAnalytics,
-  addressLabel,
-  sourceLabel = 'MyWallet360',
-  ethPrice = null,
-}) {
+export function TransactionAnalytics({ wallet, analysisDays, customRange }) {
+  const dailyAnalytics = wallet?.dailyAnalytics || []
+  const addressLabel = wallet?.profile?.wallet || wallet?.id
+  const sourceLabel = 'MyWallet360'
+  const ethPrice = null
   const rangeId = DEFAULT_ANALYTICS_RANGE
   const isCompact = useCompactViewport(700)
   const isPhone = useCompactViewport(480)
   const [tabId, setTabId] = useState('transactions')
+  const [userChartType, setUserChartType] = useState(null)
   const [brushIndexes, setBrushIndexes] = useState({ startIndex: 0, endIndex: 0 })
   const [hiddenByTab, setHiddenByTab] = useState(createHiddenSeriesState)
 
   const series = useMemo(() => getSeriesForTab(tabId), [tabId])
-  const chartType = useMemo(() => getChartTypeForTab(tabId), [tabId])
+  const chartType = useMemo(() => userChartType || getChartTypeForTab(tabId), [userChartType, tabId])
   const activeTab = ANALYTICS_TABS.find((tab) => tab.id === tabId) || ANALYTICS_TABS[0]
   const primaryKey = getPrimarySeriesKey(tabId)
   const primaryColor = series[0]?.color || SERIES_COLORS.transactions
@@ -389,7 +418,11 @@ export function TransactionAnalytics({
     ? formatAnalyticsDate(visibleRows[visibleRows.length - 1].date, { year: 'numeric' })
     : null
 
-  if (!dailyAnalytics?.length || !historyData.length || !chartData.length) return null
+  if (!dailyAnalytics?.length || !chartData.length) return (
+    <div className="card analytics-card p-5 max-[480px]:p-3.5 flex items-center justify-center min-h-[400px]">
+      <p className="text-[var(--muted)]">No analytics data available for this period.</p>
+    </div>
+  )
 
   const titleAddress = isCompact ? compactAddress(addressLabel) : (addressLabel || 'wallet')
   const rangeWindow = getRangeWindow(rangeId)
@@ -412,18 +445,20 @@ export function TransactionAnalytics({
   const allSeriesHidden = visibleSeries.length === 0
 
   return (
-    <section className="card analytics-card p-5 max-[480px]:p-3.5">
-      <div className="analytics-header">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <MaterialIcon icon="monitoring" className="text-teal-400 text-xl shrink-0" />
+    <section className="bg-[var(--surface)] border border-[var(--border)] shadow-md rounded-3xl p-8 mb-8" style={{ fontFamily: "'Inter', 'DM Sans', system-ui, -apple-system, sans-serif" }}>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="w-12 h-12 rounded-xl bg-[#f0fdfa] text-[#14b8a6] flex items-center justify-center shrink-0">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          </div>
           <div className="min-w-0">
-            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
+            <span className="text-[12px] font-bold text-[var(--muted)] uppercase tracking-[0.15em] block mb-1">
               Transaction Analytics
             </span>
-            <h2 className="text-base font-bold mt-0.5 truncate">
+            <h2 className="text-[20px] font-extrabold text-[var(--ink)] truncate tracking-tight">
               {activeTab.title}{isPhone ? '' : ` for ${titleAddress}`}
             </h2>
-            <p className="analytics-source">
+            <p className="text-[13px] font-medium text-[var(--muted)] mt-1 flex items-center gap-2">
               {isPhone ? (
                 <>
                   {titleAddress}
@@ -438,13 +473,15 @@ export function TransactionAnalytics({
                 </>
               ) : (
                 <>
-                  Source: {sourceLabel}
+                  Source: <strong className="text-[var(--muted)]">{sourceLabel}</strong>
                   {rangeWindow && (
                     <>
                       {' · '}
-                      {formatAnalyticsDate(rangeWindow.start, { year: 'numeric' })}
-                      {' – '}
-                      {formatAnalyticsDate(rangeWindow.end, { year: 'numeric' })}
+                      <span className="bg-[var(--bg)] px-2 py-0.5 rounded-md text-[var(--muted)]">
+                        {formatAnalyticsDate(rangeWindow.start, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {' – '}
+                        {formatAnalyticsDate(rangeWindow.end, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
                     </>
                   )}
                 </>
@@ -453,21 +490,46 @@ export function TransactionAnalytics({
           </div>
         </div>
 
-        <span className="analytics-range-label" aria-label="Chart range">1M</span>
+        <span className="bg-[var(--bg)] border border-[var(--border)] px-3 py-1.5 rounded-lg text-[13px] font-extrabold text-[#18c5c0] tracking-wide uppercase shrink-0" aria-label="Chart range">
+          {analysisDays === 'ytd' ? 'YTD' : customRange ? 'Custom' : analysisDays === 'all' ? 'All Time' : `${analysisDays}D`}
+        </span>
       </div>
 
-      <div className="analytics-tabs-wrap">
-        <div className="analytics-tabs" role="tablist" aria-label="Analytics metric">
+      <div className="flex overflow-x-auto hide-scrollbar mb-8">
+        <div className="flex bg-[var(--bg)] rounded-xl p-1 border border-[var(--border)]" role="tablist" aria-label="Analytics metric">
           {ANALYTICS_TABS.map((tab) => (
             <button
               key={tab.id}
               type="button"
               role="tab"
               aria-selected={tabId === tab.id}
-              className={`analytics-tab ${tabId === tab.id ? 'analytics-tab--active' : ''}`}
-              onClick={() => setTabId(tab.id)}
+              className={`px-4 py-2.5 rounded-lg font-bold text-[13px] whitespace-nowrap transition-all duration-300 border-none cursor-pointer ${
+                tabId === tab.id
+                  ? 'bg-[var(--surface)] text-[#18c5c0] shadow-[0_2px_8px_rgba(15,23,42,0.04)]'
+                  : 'bg-transparent text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--surface)]/50'
+              }`}
+              onClick={() => {
+                setTabId(tab.id)
+                setUserChartType(null)
+              }}
             >
               {isPhone ? tab.label.replace(' Transfers', '') : tab.label}
+            </button>
+          ))}
+        </div>
+        
+        <div className="flex bg-[var(--bg)] rounded-xl p-1 border border-[var(--border)] ml-auto shrink-0" role="group" aria-label="Chart type">
+          {['area', 'bar', 'line'].map((type) => (
+            <button
+              key={type}
+              onClick={() => setUserChartType(type)}
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-bold capitalize transition-all duration-300 border-none cursor-pointer ${
+                chartType === type
+                  ? 'bg-[var(--surface)] text-[var(--ink)] shadow-[0_2px_8px_rgba(15,23,42,0.04)]'
+                  : 'bg-transparent text-[var(--muted)] hover:text-[var(--muted)]'
+              }`}
+            >
+              {type}
             </button>
           ))}
         </div>
@@ -483,18 +545,18 @@ export function TransactionAnalytics({
       )}
 
       {showGenericSummary && (
-        <div className={`analytics-summary analytics-summary--${summary.length}`}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {summary.map((item) => (
             <div
               key={item.key}
-              className={`analytics-summary__chip${hiddenKeys.includes(item.key) ? ' analytics-summary__chip--dim' : ''}`}
-              style={{ '--chip-accent': item.color }}
+              className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 shadow-sm flex flex-col gap-1"
             >
-              <span className="analytics-summary__label">
-                {isPhone ? item.label.replace(' Address', '') : item.label}
-              </span>
-              <strong>{formatSeriesValue(item.key, item.total)}</strong>
-              <small>peak {formatSeriesValue(item.key, item.peak)}</small>
+              <div className="flex items-center gap-2 mb-1">
+                <i className="w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
+                <span className="text-[12px] font-bold text-[var(--muted)] uppercase tracking-wider">{item.label}</span>
+              </div>
+              <strong className="text-[24px] font-extrabold text-[var(--ink)] tracking-tight">{formatSeriesValue(item.key, item.total)}</strong>
+              <small className="text-[13px] font-medium text-[var(--muted)] mt-1">peak {formatSeriesValue(item.key, item.peak)}</small>
             </div>
           ))}
         </div>
@@ -604,12 +666,15 @@ export function TransactionAnalytics({
             <Tooltip
               allowEscapeViewBox={{ x: true, y: true }}
               wrapperStyle={{ zIndex: 20, outline: 'none' }}
+              isAnimationActive={true}
+              animationDuration={300}
               content={(
                 <AnalyticsTooltip
                   series={series}
                   hiddenKeys={hiddenKeys}
                   softMax={yScale.softMax}
                   clipped={yScale.clipped}
+                  fullData={chartData}
                 />
               )}
               cursor={usesBars

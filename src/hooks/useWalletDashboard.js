@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { walletService } from '../services/walletService'
 import { resolveWalletIdentifier } from '../utils/resolveWalletIdentifier'
 
 export function useWalletDashboard() {
+  const navigate = useNavigate()
   const [analysisDays, setAnalysisDays] = useState('ytd')
   const [customRange, setCustomRange] = useState(null)
   const [wallet, setWallet] = useState(null)
@@ -40,12 +42,20 @@ export function useWalletDashboard() {
         : await resolveWalletIdentifier(identifier)
       if (!periodChange) setResolvedIdentifier(resolution)
       setIsResolving(false)
-      if (!periodChange) setIsLoading(true)
+      if (!periodChange) {
+        setIsLoading(true)
+        // Clear previous wallet to immediately show loading state for new search
+        setWallet(current => current?.id?.toLowerCase() !== resolution.address.toLowerCase() ? null : current)
+      }
 
       const nextWallet = await walletService.getWalletByAddress(resolution.address, days, range)
       setWallet(nextWallet)
       setAnalysisDays(days)
       setCustomRange(range)
+
+      if (!options.skipNavigate) {
+        navigate(`/wallet/${resolution.address}`)
+      }
     } catch (requestError) {
       setError(requestError.message)
     } finally {
@@ -242,6 +252,7 @@ export function useWalletDashboard() {
     resolvedIdentifier,
     setSearchValue: updateSearchValue,
     searchWallet,
+    analyzeWallet,
     refreshWallet,
     selectExampleWallet,
     selectAnalysisPeriod,

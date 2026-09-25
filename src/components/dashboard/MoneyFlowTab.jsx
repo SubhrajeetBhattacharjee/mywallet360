@@ -55,14 +55,14 @@ export function MoneyFlowTab({ wallet }) {
       value: totalTxns,
       strength: activityLevel === 'Very High' ? 'Strong' : activityLevel === 'High' ? 'Moderate' : 'Low',
       dotColor: activityLevel === 'Very High' ? 'bg-emerald-500' : activityLevel === 'High' ? 'bg-amber-500' : 'bg-slate-400',
-      badgeClass: activityLevel === 'Very High' ? 'bg-emerald-500/10 text-emerald-500' : activityLevel === 'High' ? 'bg-amber-500/10 text-amber-500' : 'bg-slate-500/10 text-slate-500',
+      badgeClass: activityLevel === 'Very High' ? 'bg-emerald-500/10 text-emerald-500' : activityLevel === 'High' ? 'bg-amber-500/10 text-amber-500' : 'bg-[var(--bg)]0/10 text-[var(--muted)]',
     },
     {
       label: 'Portfolio Value',
       value: balance.value,
       strength: portfolioValue > 50000 ? 'Strong' : portfolioValue > 10000 ? 'Moderate' : 'Developing',
       dotColor: portfolioValue > 50000 ? 'bg-emerald-500' : portfolioValue > 10000 ? 'bg-amber-500' : 'bg-slate-400',
-      badgeClass: portfolioValue > 50000 ? 'bg-emerald-500/10 text-emerald-500' : portfolioValue > 10000 ? 'bg-amber-500/10 text-amber-500' : 'bg-slate-500/10 text-slate-500',
+      badgeClass: portfolioValue > 50000 ? 'bg-emerald-500/10 text-emerald-500' : portfolioValue > 10000 ? 'bg-amber-500/10 text-amber-500' : 'bg-[var(--bg)]0/10 text-[var(--muted)]',
     },
     {
       label: 'Risk Profile',
@@ -77,7 +77,7 @@ export function MoneyFlowTab({ wallet }) {
       value: `${protocolInteractions} interactions`,
       strength: protocolInteractions > 5 ? 'Strong' : protocolInteractions > 2 ? 'Moderate' : 'Low',
       dotColor: protocolInteractions > 5 ? 'bg-emerald-500' : protocolInteractions > 2 ? 'bg-amber-500' : 'bg-slate-400',
-      badgeClass: protocolInteractions > 5 ? 'bg-emerald-500/10 text-emerald-500' : protocolInteractions > 2 ? 'bg-amber-500/10 text-amber-500' : 'bg-slate-500/10 text-slate-500',
+      badgeClass: protocolInteractions > 5 ? 'bg-emerald-500/10 text-emerald-500' : protocolInteractions > 2 ? 'bg-amber-500/10 text-amber-500' : 'bg-[var(--bg)]0/10 text-[var(--muted)]',
     },
   ]
 
@@ -159,10 +159,10 @@ export function MoneyFlowTab({ wallet }) {
         >
           <div className="flex justify-between items-start mb-3 max-[480px]:flex-col max-[480px]:gap-3">
             <div>
-              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-1.5">Portfolio Snapshot</p>
-              <h3 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100 max-[480px]:text-3xl">{balance.value}</h3>
+              <p className="text-[10px] font-bold text-[var(--muted)] dark:text-[var(--muted)] uppercase tracking-[0.2em] mb-1.5">Portfolio Snapshot</p>
+              <h3 className="text-4xl font-bold tracking-tight text-[var(--ink)] dark:text-slate-100 max-[480px]:text-3xl">{balance.value}</h3>
               {balance.coverageLabel && (
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{balance.coverageLabel}</p>
+                <p className="text-[11px] text-[var(--muted)] dark:text-[var(--muted)] mt-1">{balance.coverageLabel}</p>
               )}
             </div>
             <MetricExplainer
@@ -170,12 +170,12 @@ export function MoneyFlowTab({ wallet }) {
               className="text-right max-[480px]:text-left"
               explanation={portfolio.scoreExplanation}
             >
-              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-1.5">Health Score</p>
+              <p className="text-[10px] font-bold text-[var(--muted)] dark:text-[var(--muted)] uppercase tracking-[0.2em] mb-1.5">Health Score</p>
               <div className="inline-flex items-center px-4 py-2 rounded-2xl bg-teal-400/10 border border-teal-400/20 backdrop-blur-sm">
                 <p className="text-xl font-bold text-teal-400">{score}<span className="text-xs text-teal-400/50 ml-0.5">/100</span></p>
               </div>
               {(portfolio.scoreDisclaimer || pricedOnlyDisclaimer) && (
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 max-w-[18ch] ml-auto max-[480px]:ml-0">
+                <p className="text-[10px] text-[var(--muted)] dark:text-[var(--muted)] mt-1.5 max-w-[18ch] ml-auto max-[480px]:ml-0">
                   {portfolio.scoreDisclaimer || pricedOnlyDisclaimer}
                 </p>
               )}
@@ -185,7 +185,7 @@ export function MoneyFlowTab({ wallet }) {
             <div className="w-7 h-7 rounded-full bg-teal-400/10 flex items-center justify-center shrink-0">
               <MaterialIcon icon="stars" fill className="text-teal-400 text-base" />
             </div>
-            <span className="text-slate-900 dark:text-slate-100 font-semibold">Top Performing Asset:</span>
+            <span className="text-[var(--ink)] dark:text-slate-100 font-semibold">Top Performing Asset:</span>
             <span className="text-teal-500 font-bold">{topAsset}</span>
           </div>
       </MetricExplainer>
@@ -222,7 +222,7 @@ export function MoneyFlowTab({ wallet }) {
                     <stop offset="100%" stopColor="#059669" />
                   </linearGradient>
                 </defs>
-                <circle cx="18" cy="18" fill="transparent" r="16" stroke="currentColor" className="text-slate-200 dark:text-slate-700" strokeWidth="3" />
+                <circle cx="18" cy="18" fill="transparent" r="16" stroke="currentColor" className="text-slate-200 dark:text-[var(--ink)]" strokeWidth="3" />
                 <circle
                   cx="18" cy="18" fill="transparent"
                   filter="drop-shadow(0 0 4px rgba(45,212,191,0.3))"
@@ -233,12 +233,12 @@ export function MoneyFlowTab({ wallet }) {
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-2xl font-bold tracking-tighter">{score}</span>
-                <span className="text-[7px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Score</span>
+                <span className="text-[7px] font-bold text-[var(--muted)] dark:text-[var(--muted)] uppercase tracking-widest">Score</span>
               </div>
             </div>
             <div className="text-left max-[480px]:text-center">
               <h4 className="font-bold text-xl max-[480px]:text-lg tracking-tight">{scoreLabel}</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{score}/100 — {classificationDetail}</p>
+              <p className="text-xs text-[var(--muted)] dark:text-[var(--muted)] mt-0.5">{score}/100 — {classificationDetail}</p>
             </div>
           </div>
 
@@ -247,7 +247,7 @@ export function MoneyFlowTab({ wallet }) {
               <div className="min-w-0">
                 <p className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.12em] mb-0.5">Strongest Factor</p>
                 <p className="text-sm font-bold truncate">{strongest.label}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{strongest.value}</p>
+                <p className="text-xs text-[var(--muted)] dark:text-[var(--muted)] truncate">{strongest.value}</p>
               </div>
               <span className="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                 {strongest.strength}
@@ -257,13 +257,13 @@ export function MoneyFlowTab({ wallet }) {
 
           <div className="space-y-2 mt-4">
             {signals.map((signal) => (
-              <div key={signal.label} className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 dark:bg-white/[0.06]">
+              <div key={signal.label} className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 dark:bg-[var(--surface)]/[0.06]">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className={`w-2 h-2 rounded-full ${signal.dotColor} shrink-0`} />
                   <span className="text-sm max-[480px]:text-xs font-medium truncate">{signal.label}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs max-[480px]:text-[10px] text-slate-500 dark:text-slate-400">{signal.value}</span>
+                  <span className="text-xs max-[480px]:text-[10px] text-[var(--muted)] dark:text-[var(--muted)]">{signal.value}</span>
                   <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${signal.badgeClass}`}>
                     {signal.strength}
                   </span>
@@ -274,7 +274,7 @@ export function MoneyFlowTab({ wallet }) {
 
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
             <span className="text-[9px] font-bold text-amber-500 uppercase tracking-[0.12em]">Opportunity</span>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{weaknessTip}</p>
+            <p className="text-xs text-[var(--muted)] dark:text-[var(--muted)] mt-1 leading-relaxed">{weaknessTip}</p>
           </div>
 
           <MetricExplainer
@@ -296,8 +296,8 @@ export function MoneyFlowTab({ wallet }) {
               <MaterialIcon icon="bar_chart" className="text-teal-400 text-lg" />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">{benchmarkLabel}</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{scoreExplanation}</p>
+              <p className="text-[11px] font-semibold text-[var(--ink)] dark:text-[var(--muted)]">{benchmarkLabel}</p>
+              <p className="text-[11px] text-[var(--muted)] dark:text-[var(--muted)] mt-0.5">{scoreExplanation}</p>
             </div>
           </MetricExplainer>
         </MetricExplainer>
@@ -307,8 +307,8 @@ export function MoneyFlowTab({ wallet }) {
         <section className="apple-card nft-activity-card p-[22px] max-[480px]:p-4">
           <div className="flex items-center justify-between mb-4 max-[480px]:mb-3">
             <div className="min-w-0">
-              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-1">NFT Activity</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">{nftBreakdown.total} total transfers</p>
+              <p className="text-[10px] font-bold text-[var(--muted)] dark:text-[var(--muted)] uppercase tracking-[0.2em] mb-1">NFT Activity</p>
+              <p className="text-xs text-[var(--muted)] dark:text-[var(--muted)]">{nftBreakdown.total} total transfers</p>
             </div>
             <MaterialIcon icon="stadia_controller" className="text-teal-400 text-2xl shrink-0" />
           </div>
@@ -317,20 +317,20 @@ export function MoneyFlowTab({ wallet }) {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-2.5 h-2.5 rounded-full bg-teal-400 shrink-0" />
-                  <span className="text-sm max-[480px]:text-xs font-medium text-slate-700 dark:text-slate-300">Received</span>
+                  <span className="text-sm max-[480px]:text-xs font-medium text-[var(--ink)] dark:text-[var(--muted)]">Received</span>
                 </div>
-                <span className="text-sm max-[480px]:text-xs font-bold text-slate-900 dark:text-slate-100 tabular-nums">{nftBreakdown.incoming.toLocaleString()}</span>
+                <span className="text-sm max-[480px]:text-xs font-bold text-[var(--ink)] dark:text-slate-100 tabular-nums">{nftBreakdown.incoming.toLocaleString()}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0" />
-                  <span className="text-sm max-[480px]:text-xs font-medium text-slate-700 dark:text-slate-300">Sent</span>
+                  <span className="text-sm max-[480px]:text-xs font-medium text-[var(--ink)] dark:text-[var(--muted)]">Sent</span>
                 </div>
-                <span className="text-sm max-[480px]:text-xs font-bold text-slate-900 dark:text-slate-100 tabular-nums">{nftBreakdown.outgoing.toLocaleString()}</span>
+                <span className="text-sm max-[480px]:text-xs font-bold text-[var(--ink)] dark:text-slate-100 tabular-nums">{nftBreakdown.outgoing.toLocaleString()}</span>
               </div>
               <div className="pt-2 border-t border-gray-100 dark:border-white/10">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Net</span>
+                  <span className="text-xs font-semibold text-[var(--muted)] dark:text-[var(--muted)] uppercase tracking-wider">Net</span>
                   <span className={`text-sm max-[480px]:text-xs font-bold tabular-nums ${nftBreakdown.incoming >= nftBreakdown.outgoing ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                     {nftBreakdown.incoming >= nftBreakdown.outgoing ? '+' : ''}{(nftBreakdown.incoming - nftBreakdown.outgoing).toLocaleString()}
                   </span>
@@ -383,7 +383,7 @@ export function MoneyFlowTab({ wallet }) {
               {groupedTransactions.map((group) => (
                 <div key={group.date}>
                   <div className="px-1 pt-2 pb-1">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.15em]">{group.date}</span>
+                    <span className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-[0.15em]">{group.date}</span>
                   </div>
                   {group.items.map((tx) => (
                     <article
@@ -415,7 +415,7 @@ export function MoneyFlowTab({ wallet }) {
                             <span>{tx.crypto}</span>
                           </>
                         ) : (
-                          <span className="text-slate-400 text-[11px]">—</span>
+                          <span className="text-[var(--muted)] text-[11px]">—</span>
                         )}
                       </div>
                       <span className="transaction__time">{tx.meta}</span>
@@ -428,10 +428,10 @@ export function MoneyFlowTab({ wallet }) {
         ) : (
           <div className="card activity-feed rounded-3xl border-0 p-[22px] max-[480px]:p-5 text-center">
             <div className="py-16">
-              <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-3">
-                <MaterialIcon icon="receipt_long" className="text-slate-400 text-2xl" />
+              <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-[var(--surface)]/5 flex items-center justify-center mx-auto mb-3">
+                <MaterialIcon icon="receipt_long" className="text-[var(--muted)] text-2xl" />
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-[var(--muted)]">
                 {flowFilter !== 'all'
                   ? `No ${flowFilter === 'in' ? 'received' : 'spent'} transactions in this period.`
                   : 'No transactions found for this period.'}

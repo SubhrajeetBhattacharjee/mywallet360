@@ -22,9 +22,9 @@ const ACTION_BY_TYPE = {
 const ALLOWED_TYPES = new Set(Object.keys(ACTION_BY_TYPE));
 
 function normalizePeriod(analysisPeriod) {
-  if (analysisPeriod === "ytd" || analysisPeriod === "custom") return analysisPeriod;
+  if (analysisPeriod === "ytd" || analysisPeriod === "custom" || analysisPeriod === "all") return analysisPeriod;
   const days = Number(analysisPeriod);
-  if ([1, 7, 30, 365].includes(days)) return days;
+  if ([1, 7, 30, 90, 365].includes(days)) return days;
   throw new Error("Invalid analysis period");
 }
 
@@ -59,17 +59,26 @@ async function resolvePeriodWindow(analysisPeriod, customRange = null) {
 
   const normalizedPeriod = normalizePeriod(analysisPeriod);
   const end = new Date();
-  const start = normalizedPeriod === "ytd"
-    ? new Date(Date.UTC(end.getUTCFullYear(), 0, 1))
-    : new Date(end.getTime() - normalizedPeriod * 86_400_000);
+  let start;
+  if (normalizedPeriod === "ytd") {
+    start = new Date(Date.UTC(end.getUTCFullYear(), 0, 1));
+  } else if (normalizedPeriod === "all") {
+    start = new Date("2015-07-30T00:00:00Z");
+  } else {
+    start = new Date(end.getTime() - normalizedPeriod * 86_400_000);
+  }
+
+  const startBlockPromise = normalizedPeriod === "all"
+    ? Promise.resolve(0)
+    : blockActionRequest({
+        module: "block",
+        action: "getblocknobytime",
+        timestamp: Math.floor(start.getTime() / 1000),
+        closest: "after",
+      });
 
   const [startBlock, endBlock] = await Promise.all([
-    blockActionRequest({
-      module: "block",
-      action: "getblocknobytime",
-      timestamp: Math.floor(start.getTime() / 1000),
-      closest: "after",
-    }),
+    startBlockPromise,
     blockActionRequest({
       module: "block",
       action: "getblocknobytime",
@@ -79,7 +88,7 @@ async function resolvePeriodWindow(analysisPeriod, customRange = null) {
   ]);
 
   return {
-    id: normalizedPeriod === "ytd" ? "ytd" : `${normalizedPeriod}d`,
+    id: normalizedPeriod === "ytd" ? "ytd" : normalizedPeriod === "all" ? "all" : `${normalizedPeriod}d`,
     startBlock: Number(startBlock),
     endBlock: Number(endBlock),
   };

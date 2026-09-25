@@ -35,7 +35,7 @@ export function AnalysisPeriodBar({
       <div className="dashboard-bar-periods">
         {periods.filter((p) => p.value !== 'custom').map((period) => (
           <button
-            className={`dashboard-bar-pill${selectedDays === period.value ? ' dashboard-bar-pill--active' : ''}`}
+            className={`dashboard-bar-pill${String(selectedDays) === String(period.value) ? ' dashboard-bar-pill--active' : ''}`}
             key={period.id}
             disabled={isLoading}
             onClick={() => selectPeriod(period.value)}

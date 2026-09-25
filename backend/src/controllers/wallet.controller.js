@@ -3,8 +3,8 @@ import { getPaginatedWalletTransactions } from "../services/transaction-table.se
 import { isAddress } from "ethers";
 import { HttpError } from "../middleware/error.middleware.js";
 
-const ALLOWED_ANALYSIS_DAYS = new Set([1, 7, 30, 365]);
-const ALLOWED_ANALYSIS_PERIODS = new Set(["ytd"]);
+const ALLOWED_ANALYSIS_DAYS = new Set([1, 7, 30, 90, 365]);
+const ALLOWED_ANALYSIS_PERIODS = new Set(["ytd", "all"]);
 
 export const getWalletInventory = (req, res, next) => {
   const { address } = req.params;
@@ -44,7 +44,7 @@ export const getWalletTransactions = async (req, res, next) => {
     : (ALLOWED_ANALYSIS_PERIODS.has(requestedPeriod) ? requestedPeriod : Number(requestedPeriod));
 
   if (!customRange && !ALLOWED_ANALYSIS_PERIODS.has(analysisPeriod) && !ALLOWED_ANALYSIS_DAYS.has(analysisPeriod)) {
-    next(new HttpError(400, "INVALID_ANALYSIS_PERIOD", "Choose YTD or an analysis period of 1, 7, 30, or 365 days."));
+    next(new HttpError(400, "INVALID_ANALYSIS_PERIOD", "Choose YTD, ALL, or an analysis period of 1, 7, 30, 90, or 365 days."));
     return;
   }
 
@@ -65,7 +65,7 @@ export const getWalletTransactions = async (req, res, next) => {
     res.json(payload);
   } catch (error) {
     if (error.message === "Invalid analysis period") {
-      next(new HttpError(400, "INVALID_ANALYSIS_PERIOD", "Choose YTD or an analysis period of 1, 7, 30, or 365 days."));
+      next(new HttpError(400, "INVALID_ANALYSIS_PERIOD", "Choose YTD, ALL, or an analysis period of 1, 7, 30, 90, or 365 days."));
       return;
     }
     next(error);
@@ -103,7 +103,7 @@ export const getWalletProfile = async (req, res, next) => {
   }
 
   if (!ALLOWED_ANALYSIS_PERIODS.has(analysisPeriod) && !ALLOWED_ANALYSIS_DAYS.has(analysisPeriod)) {
-    next(new HttpError(400, "INVALID_ANALYSIS_PERIOD", "Choose YTD or an analysis period of 1, 7, 30, or 365 days."));
+    next(new HttpError(400, "INVALID_ANALYSIS_PERIOD", "Choose YTD, ALL, or an analysis period of 1, 7, 30, 90, or 365 days."));
     return;
   }
 

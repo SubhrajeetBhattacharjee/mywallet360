@@ -113,7 +113,11 @@ export async function fetchLifetimeTransactionBounds(address) {
 
 export async function fetchEip7702Delegation(address) {
   try {
-    const code = await getRpcProvider().getCode(address);
+    const codePromise = getRpcProvider().getCode(address);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("EIP-7702 lookup timed out")), 5000)
+    );
+    const code = await Promise.race([codePromise, timeoutPromise]);
     if (!code || code === "0x") return null;
 
     const normalized = code.toLowerCase();

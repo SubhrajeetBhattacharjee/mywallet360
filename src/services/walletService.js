@@ -402,6 +402,18 @@ function buildWallet(address, analytics) {
     moneyFlowStats: analytics.moneyFlowStats || null,
     largestHolding: analytics.largestHolding,
     valuationHistory,
+    valuation: {
+      ...analytics.valuation,
+      change: (() => {
+        if (valuationHistory.length < 2) return null;
+        const startValue = valuationHistory[0].value;
+        const endValue = valuationHistory[valuationHistory.length - 1].value;
+        const delta = endValue - startValue;
+        if (Math.abs(delta) < 0.01) return null;
+        const sign = delta > 0 ? '+' : '';
+        return `${sign}${formatUsd(delta)}`;
+      })()
+    },
     nftCount: analytics.nftCount,
     analysisDays: analytics.period.id === 'ytd' ? 'ytd' : analytics.period.days,
     periodLabel,
@@ -634,6 +646,9 @@ async function getWalletByAddress(address, analysisPeriod = 'ytd', customRange =
   } else if (analysisPeriod === 'ytd') {
     query = 'period=ytd'
     expectedPeriodId = 'ytd'
+  } else if (analysisPeriod === 'all') {
+    query = 'period=all'
+    expectedPeriodId = 'all'
   } else {
     query = `days=${analysisPeriod}`
     expectedPeriodId = `${analysisPeriod}d`
@@ -678,6 +693,8 @@ async function getWalletTransactions(address, {
     params.set('to', customRange.to)
   } else if (analysisDays === 'ytd') {
     params.set('period', 'ytd')
+  } else if (analysisDays === 'all') {
+    params.set('period', 'all')
   } else if (analysisDays === 'custom') {
     throw new Error('Custom range dates are required.')
   } else {

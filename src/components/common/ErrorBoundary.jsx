@@ -1,10 +1,10 @@
 import { Component } from 'react'
 
 export class ErrorBoundary extends Component {
-  state = { hasError: false }
+  state = { hasError: false, error: null }
 
-  static getDerivedStateFromError() {
-    return { hasError: true }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
   }
 
   componentDidCatch(error, info) {
@@ -25,6 +25,12 @@ export class ErrorBoundary extends Component {
         >
           Refresh
         </button>
+        {this.state.error && (
+          <div className="mt-8 text-left max-w-4xl overflow-auto p-4 bg-red-50 text-red-900 rounded border border-red-200">
+            <h3 className="font-bold">{this.state.error.toString()}</h3>
+            <pre className="text-xs mt-2">{this.state.error.stack}</pre>
+          </div>
+        )}
       </main>
     )
   }

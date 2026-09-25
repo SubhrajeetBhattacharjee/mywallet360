@@ -304,14 +304,35 @@ export async function blockActionRequest(params) {
     throw new Error("BLOCKACTION_API_URL is not configured");
   }
 
+  if (params.module === "account" && params.action === "txlistinternal") {
+    return []; // No endpoint for internal txs, fallback gracefully
+  }
+  if (params.module === "account" && params.action === "addresstokenbalance") {
+    return []; // Optional Pro endpoint, not supported by REST api
+  }
+
+  const { module, action, address, ...restParams } = params;
+  let endpoint = "";
+  if (module === "account" && action === "balance") endpoint = `/api/wallet/${address}/balance`;
+  else if (module === "account" && action === "txlist") endpoint = `/api/wallet/${address}/normal-txs`;
+  else if (module === "account" && action === "tokentx") endpoint = `/api/wallet/${address}/erc20-txs`;
+  else if (module === "account" && action === "tokennfttx") endpoint = `/api/wallet/${address}/nft-txs`;
+  else if (module === "stats" && action === "ethprice") endpoint = `/api/eth-price`;
+  else if (module === "block" && action === "getblocknobytime") endpoint = `/api/block-by-timestamp`;
+  else throw new Error(`Unsupported API mapping: ${module} ${action}`);
+
   const requestParams = {
     chainid: CHAIN_ID,
-    ...params,
+    ...restParams,
   };
+  
+  const headers = {};
   if (process.env.BLOCKACTION_API_KEY) {
-    requestParams.apikey = process.env.BLOCKACTION_API_KEY;
+    headers["X-API-Key"] = process.env.BLOCKACTION_API_KEY;
   }
-  const cacheKey = new URLSearchParams(requestParams).toString();
+  
+  // Cache key must still uniquely identify the request using the original params
+  const cacheKey = new URLSearchParams(params).toString();
   const cached = getCached(cacheKey);
   if (cached) return cached;
 
@@ -320,8 +341,10 @@ export async function blockActionRequest(params) {
 
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
-        const response = await axios.get(BLOCKACTION_URL, {
+        const baseURL = BLOCKACTION_URL.endsWith('/') ? BLOCKACTION_URL.slice(0, -1) : BLOCKACTION_URL;
+        const response = await axios.get(`${baseURL}${endpoint}`, {
           params: requestParams,
+          headers,
           timeout: 15_000,
         });
 
@@ -385,9 +408,10 @@ async function fetchPaginated(action, address, extra = {}) {
 
 function normalizeAnalysisPeriod(analysisPeriod) {
   if (analysisPeriod === "ytd") return "ytd";
+  if (analysisPeriod === "all") return "all";
 
   const days = Number(analysisPeriod);
-  if ([1, 7, 30, 365].includes(days)) return days;
+  if ([1, 7, 30, 90, 365].includes(days)) return days;
 
   throw new Error("Invalid analysis period");
 }
@@ -395,16 +419,25 @@ function normalizeAnalysisPeriod(analysisPeriod) {
 async function getAnalysisPeriod(analysisPeriod) {
   const end = new Date();
   const normalizedPeriod = normalizeAnalysisPeriod(analysisPeriod);
-  const start = normalizedPeriod === "ytd"
-    ? new Date(Date.UTC(end.getUTCFullYear(), 0, 1))
-    : new Date(end.getTime() - normalizedPeriod * 86_400_000);
+  let start;
+  if (normalizedPeriod === "ytd") {
+    start = new Date(Date.UTC(end.getUTCFullYear(), 0, 1));
+  } else if (normalizedPeriod === "all") {
+    start = new Date("2015-07-30T00:00:00Z");
+  } else {
+    start = new Date(end.getTime() - normalizedPeriod * 86_400_000);
+  }
+  const startBlockPromise = normalizedPeriod === "all"
+    ? Promise.resolve(0)
+    : blockActionRequest({
+        module: "block",
+        action: "getblocknobytime",
+        timestamp: Math.floor(start.getTime() / 1000),
+        closest: "after",
+      });
+
   const [startBlock, endBlock] = await Promise.all([
-    blockActionRequest({
-      module: "block",
-      action: "getblocknobytime",
-      timestamp: Math.floor(start.getTime() / 1000),
-      closest: "after",
-    }),
+    startBlockPromise,
     blockActionRequest({
       module: "block",
       action: "getblocknobytime",
@@ -414,7 +447,7 @@ async function getAnalysisPeriod(analysisPeriod) {
   ]);
 
   return {
-    id: normalizedPeriod === "ytd" ? "ytd" : `${normalizedPeriod}d`,
+    id: normalizedPeriod === "ytd" ? "ytd" : normalizedPeriod === "all" ? "all" : `${normalizedPeriod}d`,
     days: Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86_400_000)),
     start: start.toISOString(),
     end: end.toISOString(),
@@ -565,7 +598,8 @@ function buildAssets(tokenTransfers, ethBalance, ethPrice, address, tokenPrices 
       decimals: Number(transfer.tokenDecimal || 0),
       rawBalance: 0n,
     };
-    const value = BigInt(transfer.value || "0");
+    const rawVal = transfer.value || "0";
+    const value = BigInt(rawVal === "0x" ? "0" : rawVal);
     current.rawBalance += transfer.to?.toLowerCase() === address ? value : -value;
     tokenMap.set(contractAddress, current);
   });

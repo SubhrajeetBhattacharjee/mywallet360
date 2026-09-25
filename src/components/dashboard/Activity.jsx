@@ -60,7 +60,7 @@ export function Activity({ transactions, periodLabel, onSeeAll }) {
         <div className="card activity-feed rounded-3xl border-0 p-[22px] max-[1050px]:p-[18px] max-[480px]:rounded-[20px] max-[480px]:p-3.5">
           <div className="activity-card__heading flex min-h-[35px] items-center justify-between gap-4">
             <div className="grid gap-[3px]">
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{periodLabel}</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] dark:text-[var(--muted)]">{periodLabel}</span>
               <h2>Recent Activity</h2>
             </div>
             {transactions.length > 3 && onSeeAll && (
